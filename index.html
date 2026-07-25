@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,
+      initial-scale=1.0, maximum-scale=1.0,
+      user-scalable=no">
+<title>My POU - Virtual Pet</title>
+<style>
+* {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+:root {
+  --bg1: #1a0533;
+  --bg2: #2d1b4e;
+  --card: rgba(255,255,255,0.08);
+  --accent: #a855f7;
+  --green: #22c55e;
+  --yellow: #fbbf24;
+  --red: #ef4444;
+  --blue: #3b82f6;
+}
+
+body {
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: white;
+  padding: 10px;
+  overflow-x: hidden;
+}
+
+/* ===== HEADER ===== */
+.header {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.header-left { display: flex; flex-direction: column; }
+.pou-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--yellow);
+}
+.pou-age {
+  font-size: 11px;
+  color: #c4b5fd;
+}
+
+.header-right { display: flex; flex-direction: column;
+  align-items: flex-end; gap: 2px; }
+.coin-display {
+  font-size: 14px;
+  color: var(--yellow);
+  font-weight: bold;
+}
+.day-display {
+  font-size: 11px;
+  color: #c4b5fd;
+}
+
+/* ===== ROOM ===== */
+.room {
+  width: 100%;
+  max-width: 420px;
+  height: 280px;
+  background: linear-gradient(180deg, #1e3a5f 0%,
+    #2d5a8e 40%, #8B6914 40%, #6b4f12 100%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
+  border: 2px solid rgba(255,255,255,0.15);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  cursor: pointer;
+}
+
+/* Wallpaper dots */
+.room::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 40% 0;
+  background-image: radial-gradient(
+    circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Lantai */
+.room::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40%;
+  background: repeating-linear-gradient(
+    90deg,
+    #8B6914 0px, #8B6914 40px,
+    #7a5c10 40px, #7a5c10 80px
+  );
+}
+
+/* Jendela */
+.window {
+  position: absolute;
+  top: 20px; right: 24px;
+  width: 60px; height: 50px;
+  background: linear-gradient(135deg, #87CEEB, #b0e0f0);
+  border: 3px solid #8B6914;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg,
+      transparent 49%, #8B6914 49%,
+      #8B6914 51%, transparent 51%),
+    linear-gradient(
+      transparent 49%, #8B6914 49%,
+      #8B6914 51%, transparent 51%);
+}
+
+/* Bintang di langit */
+.stars-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 60%;
+  pointer-events: none;
+}
+
+/* ===== CANVAS POU ===== */
+#pouCanvas {
+  position: absolute;
+  bottom: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ===== NOTIF ===== */
+#notification {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#notification.show { opacity: 1; }
+
+/* ===== ZZZ TIDUR ===== */
+.zzz {
+  position: absolute;
+  font-size: 18px;
+  z-index: 6;
+  animation: floatUp 2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes floatUp {
+  0%   { opacity:1; transform: translate(0,0) scale(1); }
+  100% { opacity:0; transform: translate(10px,-50px) scale(1.5); }
+}
+
+/* ===== STATUS BARS ===== */
+.status-panel {
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.status-row:last-child { margin-bottom: 0; }
+
+.status-icon { font-size: 16px; width: 22px;
+  text-align: center; }
+.status-label {
+  font-size: 11px;
+  color: #c4b5fd;
+  width: 48px;
+  flex-shrink: 0;
+}
+
+.bar-bg {
+  flex: 1;
+  height: 12px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.5s ease;
+}
+.bar-food   { background: linear-gradient(90deg,#f97316,#ef4444); }
+.bar-happy  { background: linear-gradient(90deg,#fbbf24,#f59e0b); }
+.bar-health { background: linear-gradient(90deg,#22c55e,#16a34a); }
+.bar-clean  { background: linear-gradient(90deg,#3b82f6,#1d4ed8); }
+
+.bar-val {
+  font-size: 11px;
+  color: #e2e8f0;
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.actions {
+  width: 100%;
+  max-width: 420px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.act-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  border: none;
+  border-radius: 14px;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+.act-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.act-btn .btn-icon { font-size: 22px; }
+.act-btn.food   { background: linear-gradient(135deg,#f97316,#dc2626); }
+.act-btn.bath   { background: linear-gradient(135deg,#3b82f6,#1d4ed8); }
+.act-btn.med    { background: linear-gradient(135deg,#22c55e,#15803d); }
+.act-btn.play   { background: linear-gradient(135deg,#a855f7,#7c3aed); }
+.act-btn.sleep  { background: linear-gradient(135deg,#1e3a5f,#1e40af); }
+.act-btn.shop   { background: linear-gradient(135deg,#f59e0b,#b45309); }
+.act-btn.clean  { background: linear-gradient(135deg,#06b6d4,#0e7490); }
+.act-btn.pet    { background: linear-gradient(135deg,#ec4899,#be185d); }
+
+/* ===== MINI GAME ===== */
+#miniGame {
+  display: none;
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid rgba(168,85,247,0.3);
+  margin-bottom: 10px;
+  text-align: center;
+}
+#miniGame.show { display: block; }
+#miniGame h3 {
+  font-size: 15px;
+  color: var(--yellow);
+  margin-bottom: 8px;
+}
+#miniGameCanvas {
+  border-radius: 12px;
+  background: #0f172a;
+  width: 100%;
+  max-width: 380px;
+  touch-action: none;
+}
+.mini-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #c4b5fd;
+}
+#closeMini {
+  margin-top: 10px;
+  padding: 8px 22px;
+  border: none;
+  border-radius: 20px;
+  background: #6b21a8;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ===== SHOP ===== */
+#shopPanel {
+  display: none;
+  width: 100%;
+  max-width: 420px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px;
+  border: 1px solid rgba(245,158,11,0.3);
+  margin-bottom: 10px;
+}
+#shopPanel.show { display: block; }
+#shopPanel h3 {
+  font-size: 15px;
+  color: var(--yellow);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.shop-item {
+  background: rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: background 0.2s;
+  touch-action: manipulation;
+}
+.shop-item:active { background: rgba(255,255,255,0.15); }
+.shop-item .item-icon { font-size: 28px; }
+.shop-item .item-name {
+  font-size: 12px; margin: 4px 0 2px;
+  font-weight: bold;
+}
+.shop-item .item-price {
+  font-size: 11px;
+  color: var(--yellow);
+}
+.shop-item .item-desc {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+#closeShop {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border: none;
+  border-radius: 20px;
+  background: #92400e;
+  color: white;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* ===== PARTICLES ===== */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  border-radius: 50%;
+  animation: particleFly 1s ease-out forwards;
+  z-index: 100;
+}
+@keyframes particleFly {
+  0%   { opacity:1; transform: translate(0,0) scale(1); }
+  100% { opacity:0; transform:
+    var(--tx,0) var(--ty,0) scale(0.3); }
+}
+
+/* ===== MOOD BADGE ===== */
+.mood-badge {
+  position: absolute;
+  top: 8px; left: 12px;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  z-index: 10;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <span class="pou-name" id="pouNameDisplay">
+      🟤 POU-ku
+    </span>
+    <span class="pou-age" id="pouAge">Bayi • Hari ke-1</span>
+  </div>
+  <div class="header-right">
+    <span class="coin-display" id="coinDisplay">🪙 0</span>
+    <span class="day-display" id="dayDisplay">Hari ke-1</span>
+  </div>
+</div>
+
+<!-- ROOM -->
+<div class="room" id="room">
+  <!-- Jendela -->
+  <div class="window"></div>
+  <!-- Bintang -->
+  <canvas class="stars-bg" id="starsCanvas"></canvas>
+  <!-- Mood Badge -->
+  <div class="mood-badge" id="moodBadge">😊 Senang</div>
+  <!-- Notifikasi -->
+  <div id="notification"></div>
+  <!-- POU Canvas -->
+  <canvas id="pouCanvas" width="160" height="180"></canvas>
+</div>
+
+<!-- STATUS BARS -->
+<div class="status-panel">
+  <div class="status-row">
+    <span class="status-icon">🍔</span>
+    <span class="status-label">Lapar</span>
+    <div class="bar-bg">
+      <div class="bar-fill bar-food" id="barFood"
+           style="width:70%"></div>
+    </div>
+    <span class="bar-val" id="valFood">70</span>
+  </div>
+  <div class="status-row">
+    <span class="status-icon">😊</span>
+    <span class="status-label">Senang</span>
+    <div class="bar-bg">
+      <div class="bar-fill bar-happy" id="barHappy"
+           style="width:70%"></div>
+    </div>
+    <span class="bar-val" id="valHappy">70</span>
+  </div>
+  <div class="status-row">
+    <span class="status-icon">❤️</span>
+    <span class="status-label">Sehat</span>
+    <div class="bar-bg">
+      <div class="bar-fill bar-health" id="barHealth"
+           style="width:80%"></div>
+    </div>
+    <span class="bar-val" id="valHealth">80</span>
+  </div>
+  <div class="status-row">
+    <span class="status-icon">🚿</span>
+    <span class="status-label">Bersih</span>
+    <div class="bar-bg">
+      <div class="bar-fill bar-clean" id="barClean"
+           style="width:70%"></div>
+    </div>
+    <span class="bar-val" id="valClean">70</span>
+  </div>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div class="actions">
+  <button class="act-btn food" onclick="feedPou()">
+    <span class="btn-icon">🍔</span>Makan
+  </button>
+  <button class="act-btn bath" onclick="bathPou()">
+    <span class="btn-icon">🚿</span>Mandi
+  </button>
+  <button class="act-btn med" onclick="healPou()">
+    <span class="btn-icon">💊</span>Obat
+  </button>
+  <button class="act-btn play" onclick="openMiniGame()">
+    <span class="btn-icon">🎮</span>Main
+  </button>
+  <button class="act-btn pet" onclick="petPou()">
+    <span class="btn-icon">🤗</span>Elus
+  </button>
+  <button class="act-btn sleep" onclick="sleepPou()">
+    <span class="btn-icon">😴</span>Tidur
+  </button>
+  <button class="act-btn clean" onclick="cleanPou()">
+    <span class="btn-icon">🧹</span>Bersih
+  </button>
+  <button class="act-btn shop" onclick="openShop()">
+    <span class="btn-icon">🛒</span>Toko
+  </button>
+</div>
+
+<!-- MINI GAME -->
+<div id="miniGame">
+  <h3>🎮 Ketuk Bintang!</h3>
+  <canvas id="miniGameCanvas"
+          width="380" height="200"></canvas>
+  <div class="mini-info">
+    <span>Skor: <strong id="miniScore">0</strong></span>
+    <span>Waktu: <strong id="miniTime">15</strong>d</span>
+    <span>Rekor: <strong id="miniRecord">0</strong></span>
+  </div>
+  <button id="closeMini" onclick="closeMiniGame()">
+    ✖ Tutup
+  </button>
+</div>
+
+<!-- SHOP -->
+<div id="shopPanel">
+  <h3>🛒 Toko POU</h3>
+  <div class="shop-grid">
+    <div class="shop-item"
+         onclick="buyItem('burger',10,'food',25)">
+      <div class="item-icon">🍔</div>
+      <div class="item-name">Burger</div>
+      <div class="item-desc">+25 Lapar</div>
+      <div class="item-price">🪙 10</div>
+    </div>
+    <div class="shop-item"
+         onclick="buyItem('pizza',20,'food',50)">
+      <div class="item-icon">🍕</div>
+      <div class="item-name">Pizza</div>
+      <div class="item-desc">+50 Lapar</div>
+      <div class="item-price">🪙 20</div>
+    </div>
+    <div class="shop-item"
+         onclick="buyItem('vitamin',15,'health',30)">
+      <div class="item-icon">💊</div>
+      <div class="item-name">Vitamin</div>
+      <div class="item-desc">+30 Sehat</div>
+      <div class="item-price">🪙 15</div>
+    </div>
+    <div class="shop-item"
+         onclick="buyItem('toy',25,'happy',40)">
+      <div class="item-icon">🧸</div>
+      <div class="item-name">Mainan</div>
+      <div class="item-desc">+40 Senang</div>
+      <div class="item-price">🪙 25</div>
+    </div>
+    <div class="shop-item"
+         onclick="buyItem('soap',12,'clean',35)">
+      <div class="item-icon">🧼</div>
+      <div class="item-name">Sabun</div>
+      <div class="item-desc">+35 Bersih</div>
+      <div class="item-price">🪙 12</div>
+    </div>
+    <div class="shop-item"
+         onclick="buyItem('cake',30,'happy',60)">
+      <div class="item-icon">🎂</div>
+      <div class="item-name">Kue</div>
+      <div class="item-desc">+60 Senang</div>
+      <div class="item-price">🪙 30</div>
+    </div>
+  </div>
+  <button id="closeShop" onclick="closeShop()">
+    ✖ Tutup Toko
+  </button>
+</div>
+
+<script>
+// ============================================
+//   MY POU - Virtual Pet Game
+//   Lengkap dengan animasi & mini game
+// ============================================
+
+// ===== STATE =====
+let pou = {
+  name: 'POU-ku',
+  food:   70,
+  happy:  70,
+  health: 80,
+  clean:  70,
+  coins:  50,
+  day:    1,
+  age:    0,      // dalam menit
+  mood:   'happy',
+  sleeping: false,
+  eating:   false,
+  bathing:  false,
+  petting:  false,
+  color: '#8B4513',
+  eyeX: 0, eyeY: 0,
+  mouthOpen: 0,
+  blinking: false,
+  hat: null,
+};
+
+// Muat dari localStorage
+function loadData() {
+  const saved = localStorage.getItem('pouGameData');
+  if (saved) {
+    const d = JSON.parse(saved);
+    Object.assign(pou, d);
+    showNotif('Selamat datang kembali! 👋');
+  }
+}
+
+function saveData() {
+  localStorage.setItem('pouGameData', JSON.stringify(pou));
+}
+
+// ===== CANVAS POU =====
+const pc = document.getElementById('pouCanvas');
+const px = pc.getContext('2d');
+
+// Tracking mata
+let mouseX = pc.width / 2;
+let mouseY = pc.height / 2;
+
+document.getElementById('room')
+  .addEventListener('pointermove', e => {
+    const rect = pc.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+  });
+
+document.getElementById('room')
+  .addEventListener('click', () => {
+    if (!pou.sleeping) {
+      petPou();
+    } else {
+      pou.sleeping = false;
+      showNotif('POU terbangun! 👀');
+    }
+  });
+
+// ===== GAMBAR POU =====
+let blinkTimer = 0;
+let eatAnim    = 0;
+let bathAnim   = 0;
+let petAnim    = 0;
+let bounceY    = 0;
+let bounceDir  = 1;
+let particlesBubble = [];
+
+function drawPou(ts) {
+  px.clearRect(0, 0, pc.width, pc.height);
+
+  const cx = pc.width  / 2;
+  const cy = pc.height / 2 + 10;
+  const R  = 62;
+
+  // Bounce animasi
+  if (!pou.sleeping) {
+    bounceY += 0.04 * bounceDir;
+    if (Math.abs(bounceY) > 3) bounceDir *= -1;
+  } else {
+    bounceY = 0;
+  }
+
+  const by = bounceY;
+
+  // Bayangan
+  px.fillStyle = 'rgba(0,0,0,0.18)';
+  px.beginPath();
+  px.ellipse(cx, cy + R + 12, R * 0.7, 8, 0, 0, Math.PI*2);
+  px.fill();
+
+  // Body POU
+  const bodyColor = pou.bathing ? '#5b9bd5' : pou.color;
+  px.fillStyle = bodyColor;
+  px.beginPath();
+  px.ellipse(cx, cy + by, R, R * 1.05, 0, 0, Math.PI*2);
+  px.fill();
+
+  // Highlight body
+  px.fillStyle = 'rgba(255,255,255,0.12)';
+  px.beginPath();
+  px.ellipse(cx - 18, cy - 20 + by, 22, 16,
+    -0.4, 0, Math.PI*2);
+  px.fill();
+
+  // Perut (belly)
+  px.fillStyle = '#d4956a';
+  px.beginPath();
+  px.ellipse(cx, cy + 18 + by, R*0.52, R*0.4,
+    0, 0, Math.PI*2);
+  px.fill();
+
+  // ===== MATA =====
+  const maxEye = 12;
+  const dx = Math.max(-maxEye,
+    Math.min(maxEye, mouseX - cx)) * 0.45;
+  const dy = Math.max(-maxEye,
+    Math.min(maxEye, mouseY - cy)) * 0.45;
+
+  // Blinking
+  blinkTimer++;
+  if (blinkTimer > 120 + Math.random() * 80) {
+    pou.blinking = true;
+    blinkTimer = 0;
+  }
+  if (pou.blinking) {
+    setTimeout(() => { pou.blinking = false; }, 150);
+  }
+
+  const eyeScaleY = pou.blinking ? 0.1 : 1;
+
+  // Putih mata kiri
+  px.fillStyle = 'white';
+  px.beginPath();
+  px.ellipse(cx - 22, cy - 10 + by,
+    16, 18 * eyeScaleY, 0, 0, Math.PI*2);
+  px.fill();
+  // Pupil kiri
+  if (!pou.blinking) {
+    px.fillStyle = '#1a1a1a';
+    px.beginPath();
+    px.arc(cx - 22 + dx, cy - 10 + by + dy,
+      8, 0, Math.PI*2);
+    px.fill();
+    // Kilap
+    px.fillStyle = 'white';
+    px.beginPath();
+    px.arc(cx - 19 + dx, cy - 14 + by + dy,
+      3, 0, Math.PI*2);
+    px.fill();
+  }
+
+  // Putih mata kanan
+  px.fillStyle = 'white';
+  px.beginPath();
+  px.ellipse(cx + 22, cy - 10 + by,
+    16, 18 * eyeScaleY, 0, 0, Math.PI*2);
+  px.fill();
+  // Pupil kanan
+  if (!pou.blinking) {
+    px.fillStyle = '#1a1a1a';
+    px.beginPath();
+    px.arc(cx + 22 + dx, cy - 10 + by + dy,
+      8, 0, Math.PI*2);
+    px.fill();
+    px.fillStyle = 'white';
+    px.beginPath();
+    px.arc(cx + 25 + dx, cy - 14 + by + dy,
+      3, 0, Math.PI*2);
+    px.fill();
+  }
+
+  // ===== EKSPRESI MULUT =====
+  const avgStat = (pou.food + pou.happy +
+                   pou.health + pou.clean) / 4;
+
+  px.strokeStyle = '#5a2d0c';
+  px.lineWidth = 3;
+  px.lineCap = 'round';
+
+  if (pou.sleeping) {
+    // Mata tutup saat tidur
+    px.strokeStyle = '#1a1a1a';
+    px.lineWidth = 3;
+    px.beginPath();
+    px.arc(cx - 22, cy - 10 + by, 14, 0, Math.PI);
+    px.stroke();
+    px.beginPath();
+    px.arc(cx + 22, cy - 10 + by, 14, 0, Math.PI);
+    px.stroke();
+    // Mulut tidur
+    px.strokeStyle = '#5a2d0c';
+    px.beginPath();
+    px.arc(cx, cy + 20 + by, 12, 0.1, Math.PI - 0.1);
+    px.stroke();
+
+  } else if (pou.eating) {
+    // Mulut makan (buka tutup)
+    eatAnim += 0.2;
+    const open = Math.abs(Math.sin(eatAnim)) * 18;
+    px.beginPath();
+    px.arc(cx, cy + 22 + by, open, 0, Math.PI);
+    px.fillStyle = '#c0392b';
+    px.fill();
+    px.stroke();
+
+  } else if (avgStat > 65) {
+    // Senyum
+    px.beginPath();
+    px.moveTo(cx - 20, cy + 18 + by);
+    px.quadraticCurveTo(cx, cy + 34 + by,
+      cx + 20, cy + 18 + by);
+    px.stroke();
+    // Pipi merah
+    px.fillStyle = 'rgba(255,100,100,0.35)';
+    px.beginPath();
+    px.ellipse(cx - 30, cy + 8 + by,
+      12, 8, 0, 0, Math.PI*2);
+    px.fill();
+    px.beginPath();
+    px.ellipse(cx + 30, cy + 8 + by,
+      12, 8, 0, 0, Math.PI*2);
+    px.fill();
+
+  } else if (avgStat > 35) {
+    // Datar
+    px.beginPath();
+    px.moveTo(cx - 18, cy + 24 + by);
+    px.lineTo(cx + 18, cy + 24 + by);
+    px.stroke();
+
+  } else {
+    // Sedih
+    px.beginPath();
+    px.moveTo(cx - 20, cy + 28 + by);
+    px.quadraticCurveTo(cx, cy + 16 + by,
+      cx + 20, cy + 28 + by);
+    px.stroke();
+    // Air mata
+    px.fillStyle = '#60a5fa';
+    px.beginPath();
+    px.ellipse(cx - 24, cy - 2 + by + Math.sin(Date.now()/200)*3,
+      4, 6, 0, 0, Math.PI*2);
+    px.fill();
+    px.beginPath();
+    px.ellipse(cx + 24, cy - 2 + by + Math.sin(Date.now()/200+1)*3,
+      4, 6, 0, 0, Math.PI*2);
+    px.fill();
+  }
+
+  // ===== HAT / TOPI =====
+  if (pou.hat === 'crown') {
+    px.fillStyle = '#fbbf24';
+    px.beginPath();
+    px.moveTo(cx - 28, cy - R + 8 + by);
+    px.lineTo(cx - 28, cy - R - 20 + by);
+    px.lineTo(cx - 14, cy - R - 8 + by);
+    px.lineTo(cx,      cy - R - 26 + by);
+    px.lineTo(cx + 14, cy - R - 8 + by);
+    px.lineTo(cx + 28, cy - R - 20 + by);
+    px.lineTo(cx + 28, cy - R + 8 + by);
+    px.closePath();
+    px.fill();
+    px.strokeStyle = '#f59e0b';
+    px.lineWidth = 2;
+    px.stroke();
+  }
+
+  // ===== GELEMBUNG MANDI =====
+  if (pou.bathing) {
+    bathAnim++;
+    if (bathAnim % 8 === 0) {
+      particlesBubble.push({
+        x: cx + (Math.random()-0.5)*80,
+        y: cy + R,
+        vy: -1.5 - Math.random(),
+        r: 4 + Math.random()*6,
+        life: 1,
+      });
+    }
+  }
+  particlesBubble = particlesBubble.filter(b => b.life > 0);
+  particlesBubble.forEach(b => {
+    b.y   += b.vy;
+    b.life -= 0.015;
+    b.x   += Math.sin(b.y * 0.1) * 0.5;
+    px.strokeStyle = `rgba(100,180,255,${b.life})`;
+    px.lineWidth = 1.5;
+    px.beginPath();
+    px.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    px.stroke();
+    px.fillStyle = `rgba(200,230,255,${b.life*0.3})`;
+    px.fill();
+  });
+
+  // Tangan POU
+  px.fillStyle = pou.bathing ? '#5b9bd5' : pou.color;
+  // Tangan kiri
+  px.beginPath();
+  px.ellipse(cx - R - 8, cy + 10 + by,
+    14, 10, -0.3, 0, Math.PI*2);
+  px.fill();
+  // Tangan kanan
+  px.beginPath();
+  px.ellipse(cx + R + 8, cy + 10 + by,
+    14, 10, 0.3, 0, Math.PI*2);
+  px.fill();
+
+  // Kaki POU
+  // Kaki kiri
+  px.beginPath();
+  px.ellipse(cx - 24, cy + R + 2 + by,
+    18, 12, 0.2, 0, Math.PI*2);
+  px.fill();
+  // Kaki kanan
+  px.beginPath();
+  px.ellipse(cx + 24, cy + R + 2 + by,
+    18, 12, -0.2, 0, Math.PI*2);
+  px.fill();
+
+  // ZZZ saat tidur
+  if (pou.sleeping) {
+    const t  = Date.now() / 1000;
+    const zx = cx + 55;
+    const zy = cy - 60 + by;
+    ['z','Z','Z'].forEach((z, i) => {
+      const alpha = Math.max(0,
+        Math.sin(t * 1.5 + i * 1.2));
+      px.fillStyle = `rgba(180,180,255,${alpha})`;
+      px.font = `bold ${14 + i*4}px Arial`;
+      px.fillText(z,
+        zx + i * 10,
+        zy - i * 16 + Math.sin(t + i)*5);
+    });
+  }
+}
+
+// ===== STARS BACKGROUND =====
+const sc  = document.getElementById('starsCanvas');
+const scx = sc.getContext('2d');
+const starsArr = [];
+
+function initStars() {
+  sc.width  = sc.offsetWidth;
+  sc.height = sc.offsetHeight;
+  starsArr.length = 0;
+  for (let i = 0; i < 30; i++) {
+    starsArr.push({
+      x: Math.random() * sc.width,
+      y: Math.random() * sc.height,
+      r: Math.random() * 1.5 + 0.5,
+      a: Math.random(),
+      speed: 0.005 + Math.random() * 0.01,
+    });
+  }
+}
+initStars();
+
+function drawStarsCanvas() {
+  scx.clearRect(0, 0, sc.width, sc.height);
+  starsArr.forEach(s => {
+    s.a += s.speed;
+    const alpha = 0.4 + Math.sin(s.a) * 0.4;
+    scx.fillStyle = `rgba(255,255,255,${alpha})`;
+    scx.beginPath();
+    scx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    scx.fill();
+  });
+}
+
+// ===== MINI GAME =====
+const mg  = document.getElementById('miniGameCanvas');
+const mgx = mg.getContext('2d');
+let miniTargets   = [];
+let miniScore2    = 0;
+let miniTimeLeft  = 15;
+let miniRecord    = Number(
+  localStorage.getItem('pouMiniRecord') || 0);
+let miniRunning   = false;
+let miniTimer     = null;
+
+document.getElementById('miniRecord')
+  .textContent = miniRecord;
+
+function openMiniGame() {
+  document.getElementById('miniGame')
+    .classList.add('show');
+  document.getElementById('shopPanel')
+    .classList.remove('show');
+  startMiniGame();
+}
+
+function closeMiniGame() {
+  document.getElementById('miniGame')
+    .classList.remove('show');
+  clearInterval(miniTimer);
+  miniRunning = false;
+}
+
+function startMiniGame() {
+  miniTargets  = [];
+  miniScore2   = 0;
+  miniTimeLeft = 15;
+  miniRunning  = true;
+
+  document.getElementById('miniScore')
+    .textContent = 0;
+  document.getElementById('miniTime')
+    .textContent = 15;
+
+  clearInterval(miniTimer);
+  miniTimer = setInterval(() => {
+    miniTimeLeft--;
+    document.getElementById('miniTime')
+      .textContent = miniTimeLeft;
+    if (miniTimeLeft <= 0) {
+      miniRunning = false;
+      clearInterval(miniTimer);
+      // Reward
+      const reward = Math.floor(miniScore2 / 2);
+      pou.coins += reward;
+      pou.happy = Math.min(100, pou.happy + 20);
+      saveData();
+      updateUI();
+      showNotif(
+        `Game selesai! +${reward}🪙 +20 Senang`);
+      if (miniScore2 > miniRecord) {
+        miniRecord = miniScore2;
+        localStorage.setItem(
+          'pouMiniRecord', miniRecord);
+        document.getElementById('miniRecord')
+          .textContent = miniRecord;
+      }
+    }
+  }, 1000);
+
+  spawnMiniTarget();
+}
+
+function spawnMiniTarget() {
+  if (!miniRunning) return;
+  const r  = 20 + Math.random() * 14;
+  const mw = mg.offsetWidth || 380;
+  miniTargets.push({
+    x: r + Math.random() * (mw - r*2),
+    y: r + Math.random() * (mg.height - r*2),
+    r,
+    color: ['#fbbf24','#f87171',
+            '#34d399','#60a5fa','#a78bfa'][
+      Math.floor(Math.random()*5)],
+    life: 1,
+  });
+  const delay = Math.max(600,
+    1200 - miniScore2 * 30);
+  setTimeout(spawnMiniTarget, delay);
+}
+
+mg.addEventListener('pointerdown', e => {
+  if (!miniRunning) return;
+  const rect = mg.getBoundingClientRect();
+  const scaleX = mg.width / rect.width;
+  const scaleY = mg.height / rect.height;
+  const tx = (e.clientX - rect.left) * scaleX;
+  const ty = (e.clientY - rect.top)  * scaleY;
+
+  miniTargets = miniTargets.filter(t => {
+    const dx = tx - t.x;
+    const dy = ty - t.y;
+    if (Math.sqrt(dx*dx+dy*dy) < t.r) {
+      miniScore2++;
+      document.getElementById('miniScore')
+        .textContent = miniScore2;
+      spawnDomParticle(
+        e.clientX, e.clientY, t.color);
+      return false;
+    }
+    return true;
+  });
+});
+
+function drawMiniGame() {
+  const mw = mg.width;
+  const mh = mg.height;
+
+  mgx.clearRect(0, 0, mw, mh);
+  mgx.fillStyle = '#0f172a';
+  mgx.fillRect(0, 0, mw, mh);
+
+  if (!miniRunning && miniTimeLeft <= 0) {
+    mgx.fillStyle = 'white';
+    mgx.font = 'bold 22px Arial';
+    mgx.textAlign = 'center';
+    mgx.fillText(
+      `Skor: ${miniScore2}`,
+      mw/2, mh/2 - 10);
+    mgx.font = '14px Arial';
+    mgx.fillStyle = '#fbbf24';
+    mgx.fillText('Ketuk Mulai untuk main lagi',
+      mw/2, mh/2 + 20);
+    return;
+  }
+
+  miniTargets.forEach(t => {
+    // Glow
+    const grd = mgx.createRadialGradient(
+      t.x, t.y, 0, t.x, t.y, t.r);
+    grd.addColorStop(0, t.color);
+    grd.addColorStop(1, 'transparent');
+    mgx.fillStyle = grd;
+    mgx.beginPath();
+    mgx.arc(t.x, t.y, t.r * 1.4, 0, Math.PI*2);
+    mgx.fill();
+
+    // Bintang
+    mgx.fillStyle = t.color;
+    mgx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const angle = (i*Math.PI)/5 - Math.PI/2;
+      const r = i%2===0 ? t.r : t.r*0.45;
+      mgx.lineTo(
+        t.x + Math.cos(angle)*r,
+        t.y + Math.sin(angle)*r);
+    }
+    mgx.closePath();
+    mgx.fill();
+    mgx.strokeStyle = 'rgba(255,255,255,0.5)';
+    mgx.lineWidth = 1.5;
+    mgx.stroke();
+  });
+
+  // Timer bar
+  const prog = miniTimeLeft / 15;
+  mgx.fillStyle = 'rgba(255,255,255,0.1)';
+  mgx.fillRect(0, mh - 6, mw, 6);
+  mgx.fillStyle = prog > 0.5 ? '#22c55e'
+    : prog > 0.25 ? '#f59e0b' : '#ef4444';
+  mgx.fillRect(0, mh - 6, mw * prog, 6);
+}
+
+// ===== SHOP =====
+function openShop() {
+  document.getElementById('shopPanel')
+    .classList.add('show');
+  document.getElementById('miniGame')
+    .classList.remove('show');
+}
+function closeShop() {
+  document.getElementById('shopPanel')
+    .classList.remove('show');
+}
+
+function buyItem(name, price, stat, amount) {
+  if (pou.coins < price) {
+    showNotif('Koin tidak cukup! 💸');
+    return;
+  }
+  pou.coins -= price;
+  if (stat === 'food') {
+    pou.food = Math.min(100, pou.food + amount);
+  } else if (stat === 'health') {
+    pou.health = Math.min(100, pou.health + amount);
+  } else if (stat === 'happy') {
+    pou.happy = Math.min(100, pou.happy + amount);
+  } else if (stat === 'clean') {
+    pou.clean = Math.min(100, pou.clean + amount);
+  }
+  showNotif(`✅ ${name} dibeli! +${amount}`);
+  spawnDomParticle(
+    window.innerWidth/2,
+    window.innerHeight/2,
+    '#fbbf24');
+  saveData();
+  updateUI();
+}
+
+// ===== AKSI POU =====
+function feedPou() {
+  if (pou.sleeping) {
+    showNotif('POU sedang tidur! 😴');
+    return;
+  }
+  if (pou.food >= 100) {
+    showNotif('POU sudah kenyang! 😋');
+    return;
+  }
+  pou.food   = Math.min(100, pou.food + 25);
+  pou.happy  = Math.min(100, pou.happy + 5);
+  pou.eating = true;
+  setTimeout(() => { pou.eating = false; }, 2000);
+  showNotif('Yummy! POU makan 🍔 +25 Lapar');
+  spawnRoomParticles('🍔');
+  saveData();
+  updateUI();
+}
+
+function bathPou() {
+  if (pou.sleeping) {
+    showNotif('POU sedang tidur! 😴');
+    return;
+  }
+  if (pou.clean >= 100) {
+    showNotif('POU sudah bersih! ✨');
+    return;
+  }
+  pou.clean   = Math.min(100, pou.clean + 30);
+  pou.health  = Math.min(100, pou.health + 5);
+  pou.bathing = true;
+  setTimeout(() => { pou.bathing = false; }, 3000);
+  showNotif('Segar! POU mandi 🚿 +30 Bersih');
+  saveData();
+  updateUI();
+}
+
+function healPou() {
+  if (pou.sleeping) {
+    showNotif('POU sedang tidur! 😴');
+    return;
+  }
+  if (pou.health >= 100) {
+    showNotif('POU sudah sehat! 💪');
+    return;
+  }
+  pou.health = Math.min(100, pou.health + 30);
+  showNotif('Sehat! POU minum obat 💊 +30 Sehat');
+  spawnRoomParticles('💊');
+  saveData();
+  updateUI();
+}
+
+function petPou() {
+  if (pou.sleeping) return;
+  pou.happy  = Math.min(100, pou.happy + 10);
+  pou.petting = true;
+  setTimeout(() => { pou.petting = false; }, 1000);
+  showNotif('POU senang dielus! 🤗 +10 Senang');
+  spawnDomParticle(
+    window.innerWidth/2,
+    window.innerHeight * 0.35,
+    '#ec4899');
+  saveData();
+  updateUI();
+}
+
+function sleepPou() {
+  if (pou.sleeping) {
+    pou.sleeping = false;
+    showNotif('POU terbangun! ☀️');
+  } else {
+    pou.sleeping = true;
+    showNotif('POU tidur... 😴 Stat akan pulih');
+    // Recovery saat tidur
+    const sleepInterval = setInterval(() => {
+      if (!pou.sleeping) {
+        clearInterval(sleepInterval);
+        return;
+      }
+      pou.food   = Math.min(100, pou.food   + 2);
+      pou.health = Math.min(100, pou.health + 3);
+      pou.happy  = Math.min(100, pou.happy  + 1);
+      updateUI();
+      saveData();
+    }, 3000);
+  }
+  updateUI();
+}
+
+function cleanPou() {
+  if (pou.sleeping) {
+    showNotif('POU sedang tidur! 😴');
+    return;
+  }
+  pou.clean  = Math.min(100, pou.clean + 20);
+  pou.health = Math.min(100, pou.health + 5);
+  showNotif('Bersih! 🧹 +20 Kebersihan');
+  spawnRoomParticles('✨');
+  saveData();
+  updateUI();
+}
+
+// ===== PARTIKEL DOM =====
+function spawnDomParticle(x, y, color) {
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle  = Math.random() * Math.PI * 2;
+    const dist   = 40 + Math.random() * 60;
+    const tx = Math.cos(angle) * dist + 'px';
+    const ty = Math.sin(angle) * dist - 30 + 'px';
+    p.style.cssText = `
+      left:${x}px; top:${y}px;
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      background:${color};
+      --tx:translateX(${tx});
+      --ty:translateY(${ty});
+      margin-left:-4px; margin-top:-4px;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function spawnRoomParticles(emoji) {
+  const room = document.getElementById('room');
+  const rect = room.getBoundingClientRect();
+  for (let i = 0; i < 5; i++) {
+    const el = document.createElement('div');
+    el.textContent = emoji;
+    el.style.cssText = `
+      position:fixed;
+      left:${rect.left + rect.width/2 +
+             (Math.random()-0.5)*60}px;
+      top:${rect.top + rect.height/2}px;
+      font-size:22px;
+      pointer-events:none;
+      z-index:200;
+      animation:particleFly 1.2s ease-out forwards;
+      --tx:translateX(${(Math.random()-0.5)*80}px);
+      --ty:translateY(-${40+Math.random()*60}px);
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1200);
+  }
+}
+
+// ===== NOTIFIKASI =====
+let notifTimer = null;
+function showNotif(msg) {
+  const el = document.getElementById('notification');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 2500);
+}
+
+// ===== UPDATE UI =====
+function updateUI() {
+  // Status bars
+  document.getElementById('barFood')
+    .style.width = pou.food + '%';
+  document.getElementById('barHappy')
+    .style.width = pou.happy + '%';
+  document.getElementById('barHealth')
+    .style.width = pou.health + '%';
+  document.getElementById('barClean')
+    .style.width = pou.clean + '%';
+
+  document.getElementById('valFood')
+    .textContent = Math.round(pou.food);
+  document.getElementById('valHappy')
+    .textContent = Math.round(pou.happy);
+  document.getElementById('valHealth')
+    .textContent = Math.round(pou.health);
+  document.getElementById('valClean')
+    .textContent = Math.round(pou.clean);
+
+  // Coin & day
+  document.getElementById('coinDisplay')
+    .textContent = '🪙 ' + Math.round(pou.coins);
+  document.getElementById('dayDisplay')
+    .textContent = 'Hari ke-' + pou.day;
+
+  // Age & name
+  const ages = ['Bayi','Anak','Remaja','Dewasa'];
+  const ageIdx = Math.min(3,
+    Math.floor(pou.age / 60 / 24));
+  document.getElementById('pouAge')
+    .textContent = ages[ageIdx] +
+    ' • Hari ke-' + pou.day;
+  document.getElementById('pouNameDisplay')
+    .textContent = '🟤 ' + pou.name;
+
+  // Mood badge
+  const avg = (pou.food + pou.happy +
+               pou.health + pou.clean) / 4;
+  let mood = '😊 Senang';
+  if (pou.sleeping)      mood = '😴 Tidur';
+  else if (avg >= 80)    mood = '🥳 Gembira';
+  else if (avg >= 60)    mood = '😊 Senang';
+  else if (avg >= 40)    mood = '😐 Biasa';
+  else if (avg >= 20)    mood = '😢 Sedih';
+  else                   mood = '😭 Kritis!';
+  document.getElementById('moodBadge')
+    .textContent = mood;
+}
+
+// ===== DECAY STAT (berkurang tiap waktu) =====
+function decayStats() {
+  if (pou.sleeping) return;
+  pou.food   = Math.max(0, pou.food   - 0.8);
+  pou.happy  = Math.max(0, pou.happy  - 0.5);
+  pou.health = Math.max(0, pou.health - 0.3);
+  pou.clean  = Math.max(0, pou.clean  - 0.6);
+
+  // Peringatan kritis
+  if (pou.food < 20 && Math.random() < 0.1)
+    showNotif('⚠️ POU lapar! Beri makan!');
+  if (pou.health < 20 && Math.random() < 0.1)
+    showNotif('⚠️ POU sakit! Beri obat!');
+  if (pou.clean < 20 && Math.random() < 0.1)
+    showNotif('⚠️ POU kotor! Mandikan!');
+  if (pou.happy < 20 && Math.random() < 0.1)
+    showNotif('⚠️ POU sedih! Ajak main!');
+
+  // Koin tiap siklus kecil
+  pou.coins += 0.05;
+
+  updateUI();
+  saveData();
+}
+
+// ===== DAY TIMER =====
+function dayTick() {
+  pou.age++;
+  if (pou.age % 60 === 0) {
+    pou.day++;
+    pou.coins += 5;
+    showNotif(`🌅 Hari ke-${pou.day}! +5🪙`);
+    saveData();
+    updateUI();
+  }
+}
+
+// ===== RESIZE CANVAS =====
+function resizeCanvases() {
+  const container = document.getElementById(
+    'gameContainer') ||
+    document.querySelector('.room');
+  const room = document.getElementById('room');
+  sc.width  = room.offsetWidth;
+  sc.height = room.offsetHeight;
+  initStars();
+
+  const mw = Math.min(
+    document.querySelector('.actions')
+      .offsetWidth, 380);
+  mg.width  = mw;
+  initStars();
+}
+
+// ===== MAIN LOOP =====
+let lastTS = 0;
+function mainLoop(ts) {
+  drawPou(ts);
+  drawStarsCanvas();
+  drawMiniGame();
+  requestAnimationFrame(mainLoop);
+}
+
+// ===== INISIALISASI =====
+window.addEventListener('load', () => {
+  loadData();
+  resizeCanvases();
+  updateUI();
+  requestAnimationFrame(mainLoop);
+
+  // Decay stat setiap 3 detik
+  setInterval(decayStats, 3000);
+  // Day tick setiap 1 menit = 60 detik
+  setInterval(dayTick, 60000);
+  // Autosave
+  setInterval(saveData, 10000);
+
+  showNotif('Halo! POU-mu menunggumu! 🐾');
+});
+
+window.addEventListener('resize', resizeCanvases);
+</script>
+</body>
+</html>
